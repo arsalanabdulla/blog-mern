@@ -26,7 +26,7 @@ const PostAuthor = ({authorID,createdAt}) => {
   return (
     <Link to={`/posts/users/${author._id}`}>
     <div className="flex">
-        <img className='w-10 object-cover rounded-lg mr-2' src={`${REACT_APP_ASSETS_URL}/uploads/${author.avatar}`} alt="" />
+        <img className='w-10 object-cover rounded-lg mr-2' src={author.avatar} alt="" />
         <div className="flex flex-col gap-2">
             <h2 className='font-semibold text-sm'>By: {author.name}</h2>
             <p className='text-sm'><ReactTimeAgo date={new Date(createdAt)} locale='en-US'/></p>

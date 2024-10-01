@@ -94,9 +94,9 @@ const UserProfile = () => {
     <div className="flex flex-col items-center justify-start w-[80%] md:w-[50%] mx-auto mb-20">
       <Link to={`/myposts/${cUser.id}`} className='p-3 rounded-xl bg-white mb-4 hover:bg-gray-900 hover:text-white duration-100'>My Posts</Link>
       <div className="relative">
-        <img className='rounded-full border-8 border-white w-40 h-40 object-cover' src={`${REACT_APP_ASSETS_URL}/uploads/${avatar}`} alt={userData.name} />
+        <img className='rounded-full border-8 border-white w-40 h-40 object-cover' src={avatar} alt={userData.name} />
         <div className={`cursor-pointer absolute bottom-2 right-4 rounded-full p-2 ${avatarC?'bg-blue-600':'bg-gray-900'} `}>
-          <form action="">
+          <form action="" encType="multipart/form-data">
             <input className='hidden' type="file" name='avatar' id='avatar' accept='png, jpg, jpeg' onChange={e=>setAvatar(e.target.files[0])} />
             <label className={`text-xl cursor-pointer ${avatarC?'hidden':'block'}`} htmlFor="avatar" onClick={()=>setAvatarC(true)}>
               <FaEdit color='white'/>            

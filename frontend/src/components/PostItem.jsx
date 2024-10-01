@@ -16,7 +16,7 @@ const PostItem = ({post}) => {
     <div className='xl:w-[30%] lg:w-[45%] w-full duration-200 hover:drop-shadow-2xl'>
         <div className="p-3 bg-white rounded-t-3xl">
         <Link to={`/posts/${post._id}`}>
-        <img className='w-full lg:h-60 object-cover rounded-3xl' src={`${REACT_APP_ASSETS_URL}/uploads/${post.thumbnail}`} alt="" /></Link>
+        <img className='w-full lg:h-60 object-cover rounded-3xl' src={post.thumbnail} alt="" /></Link>
         <div className="mt-4 mb-2">
             <Link className='font-bold' to={`/posts/${post._id}`}>{shortTitle}</Link>
             <p className='mt-4 text-gray-900'>{shortDesc}</p>

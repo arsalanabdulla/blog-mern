@@ -45,7 +45,7 @@ const Dashboard = () => {
               return(
                 <div key={post._id} className="flex md:flex-row flex-col w-full py-2 px-4 rounded-xl bg-white justify-between">
                   <div className="flex gap-4 items-center">
-                    <img className='w-20 h-20 object-cover rounded-lg' src={`${REACT_APP_ASSETS_URL}/uploads/${post.thumbnail}`} alt="" />
+                    <img className='w-20 h-20 object-cover rounded-lg' src={post.thumbnail} alt="" />
                     <h1>{post.title}</h1>
                   </div>
                   <div className="flex items-center justify-center gap-4 mt-5 md:mt-0">

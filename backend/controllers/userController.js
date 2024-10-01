@@ -5,6 +5,13 @@ const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 const HttpError = require("../models/errorModel");
 const User = require("../models/userModel");
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: "dplzyvxuq",
+  api_key: "461458193617547",
+  api_secret: "F94fsIhjIR1Jlq6AbsxkFN6WVcs",
+});
 
 const register = async (req, res, next) => {
   try {
@@ -89,7 +96,14 @@ const changeAvatar = async (req, res, next) => {
     const user = await User.findById(req.user.id);
 
     if (user.avatar) {
-      fs.unlink(path.join(__dirname, "..", "uploads", user.avatar), (err) => {
+      const publicId = user.avatar.split("/").pop().split(".")[0];
+      const publicId1 = user.avatar.split("/").pop().split(".")[1];
+      const result = await cloudinary.uploader.destroy(publicId);
+      if (!result) {
+        return next(new HttpError("error"));
+      }
+
+      fs.unlink(path.join(__dirname, "..", "uploads", publicId+'.'+publicId1), (err) => {
         if (err) {
           return next(new HttpError(err));
         }
@@ -106,24 +120,38 @@ const changeAvatar = async (req, res, next) => {
 
     let fileName = avatar.name;
     let splittedFn = fileName.split(".");
-    let newFileName =
-      splittedFn[0] + uuidv4() + "." + splittedFn[splittedFn.length - 1];
-    avatar.mv(
-      path.join(__dirname, "..", "/uploads", newFileName),
+    let newFileName = splittedFn[0] + uuidv4();
+    let newFileName1 =
+    newFileName+'.'+splittedFn[splittedFn.length - 1];
+
+    await avatar.mv(
+      path.join(__dirname, "..", "/uploads", newFileName1),
       async (err) => {
         if (err) {
           return next(new HttpError(err));
         }
 
+        const uploadResult = await cloudinary.uploader.upload(
+          path.join(__dirname, "..", "/uploads", newFileName1),
+          {
+            public_id: newFileName,
+          }
+        );
+
+        if (!uploadResult) {
+          return next(new HttpError("Failed to upload.", 422));
+        }
+
         const updatedAvatar = await User.findByIdAndUpdate(
           req.user.id,
-          { avatar: newFileName },
+          { avatar: uploadResult.secure_url },
           { new: true }
         );
 
         if (!updatedAvatar) {
           return next(new HttpError("Avatar couldn't be changed.", 422));
         }
+
         res.status(200).json(updatedAvatar);
       }
     );
@@ -134,10 +162,13 @@ const changeAvatar = async (req, res, next) => {
 
 const editUser = async (req, res, next) => {
   try {
-    const { name, email, currentPassword, newPassword, confirmNewPassword } = req.body;
+    const { name, email, currentPassword, newPassword, confirmNewPassword } =
+      req.body;
 
     if (!name || !email || !currentPassword) {
-      return next(new HttpError("Name, email, and current password are required.", 422));
+      return next(
+        new HttpError("Name, email, and current password are required.", 422)
+      );
     }
 
     // Find the user by ID
@@ -153,7 +184,10 @@ const editUser = async (req, res, next) => {
     }
 
     // Validate the current password
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    const isCurrentPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
     if (!isCurrentPasswordValid) {
       return next(new HttpError("Invalid current password.", 422));
     }
@@ -167,7 +201,9 @@ const editUser = async (req, res, next) => {
       }
 
       if (newPassword.trim().length < 6) {
-        return next(new HttpError("New password should be at least 6 characters.", 422));
+        return next(
+          new HttpError("New password should be at least 6 characters.", 422)
+        );
       }
 
       // Hash the new password
@@ -177,14 +213,15 @@ const editUser = async (req, res, next) => {
     }
 
     // Update the user
-    const updatedUser = await User.findByIdAndUpdate(req.user.id, updateData, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(req.user.id, updateData, {
+      new: true,
+    });
 
     res.status(200).json(updatedUser);
   } catch (error) {
     return next(error);
   }
 };
-
 
 const getAuthors = async (req, res, next) => {
   try {

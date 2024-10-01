@@ -2,6 +2,7 @@ const {Router}=require('express')
 const {register,login,getUser,changeAvatar,editUser,getAuthors}=require('../controllers/userController')
 const authMiddleware=require('../middleware/authMiddleware')
 
+
 const router=Router()
 
 router.post('/register',register)

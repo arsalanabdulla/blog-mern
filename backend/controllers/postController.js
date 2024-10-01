@@ -4,6 +4,13 @@ const { v4: uuid } = require("uuid");
 const HttpError = require("../models/errorModel");
 const Post = require("../models/postModel");
 const User = require("../models/userModel");
+const cloudinary = require("cloudinary").v2;
+
+cloudinary.config({
+  cloud_name: "dplzyvxuq",
+  api_key: "461458193617547",
+  api_secret: "F94fsIhjIR1Jlq6AbsxkFN6WVcs",
+});
 
 const createPost = async (req, res, next) => {
   try {
@@ -22,19 +29,31 @@ const createPost = async (req, res, next) => {
     }
     let fileName = thumbnail.name;
     let splittedFn = fileName.split(".");
-    let newFileName =
-      splittedFn[0] + uuid() + "." + splittedFn[splittedFn.length - 1];
+    let newFileName = splittedFn[0] + uuid();
+    let newFileName1 =
+    newFileName+'.'+splittedFn[splittedFn.length - 1];
     thumbnail.mv(
-      path.join(__dirname, "..", "uploads", newFileName),
+      path.join(__dirname, "..", "uploads", newFileName1),
       async (err) => {
         if (err) {
           return next(new HttpError(err));
+        }
+
+        const uploadResult = await cloudinary.uploader.upload(
+          path.join(__dirname, "..", "/uploads", newFileName1),
+          {
+            public_id: newFileName,
+          }
+        );
+
+        if (!uploadResult) {
+          return next(new HttpError("Failed to upload.", 422));
         }
         const newPost = await Post.create({
           title,
           category,
           description,
-          thumbnail: newFileName,
+          thumbnail: uploadResult.secure_url,
           creator: req.user.id,
         });
         if (!newPost) {
@@ -117,8 +136,15 @@ const editPost = async (req, res, next) => {
           { new: true }
         );
       } else {
+        const publicId = oldPost.thumbnail.split("/").pop().split(".")[0];
+      const publicId1 = oldPost.thumbnail.split("/").pop().split(".")[1];
+      const result = await cloudinary.uploader.destroy(publicId);
+      if (!result) {
+        return next(new HttpError("error"));
+      }
+
         fs.unlink(
-          path.join(__dirname, "..", "/uploads", oldPost.thumbnail),
+          path.join(__dirname, "..", "/uploads", publicId+'.'+publicId1),
           async (err) => {
             if (err) {
               return next(new HttpError(err));
@@ -134,23 +160,35 @@ const editPost = async (req, res, next) => {
         }
         fileName = thumbnail.name;
         let splittedFn = fileName.split(".");
-        newFileName =
-          splittedFn[0] + uuid() + "." + splittedFn[splittedFn.length - 1];
+        newFileName = splittedFn[0] + uuid();
+        let newFileName1 =
+        newFileName+'.'+splittedFn[splittedFn.length - 1];
+        
         thumbnail.mv(
-          path.join(__dirname, "..", "uploads", newFileName),
+          path.join(__dirname, "..", "uploads", newFileName1),
           async (err) => {
             if (err) {
               return next(new HttpError(err));
-            }
+            }              
           }
         );
+        const uploadResult = await cloudinary.uploader.upload(
+          path.join(__dirname, "..", "/uploads", newFileName1),
+          {
+            public_id: newFileName,
+          }
+        );
+
+        if (!uploadResult) {
+          return next(new HttpError("Failed to upload.", 422));
+        }
         updatedPost = await Post.findByIdAndUpdate(
           postID,
           {
             title,
             category,
             description,
-            thumbnail: newFileName,
+            thumbnail: uploadResult.secure_url,
           },
           { new: true }
         );
@@ -175,8 +213,15 @@ const deletePost = async (req, res, next) => {
     const post = await Post.findById(postID);
     const fileName = post.thumbnail;
     if (req.user.id == post.creator) {
+      const publicId = fileName.split("/").pop().split(".")[0];
+      const publicId1 = fileName.split("/").pop().split(".")[1];
+      const result = await cloudinary.uploader.destroy(publicId);
+      if (!result) {
+        return next(new HttpError("error"));
+      }
+
       fs.unlink(
-        path.join(__dirname, "..", "uploads", fileName),
+        path.join(__dirname, "..", "uploads", publicId+'.'+publicId1),
         async (err) => {
           if (err) {
             return next(new HttpError(error));

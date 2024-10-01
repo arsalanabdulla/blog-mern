@@ -47,7 +47,7 @@ const PostDetail = () => {
       </div>
       <h1 className="text-2xl sm:text-4xl font-bold mt-10 mb-6">{post.title}</h1>
       <div className="">
-        <img className="rounded-lg w-full" src={`${REACT_APP_ASSETS_URL}/uploads/${post.thumbnail}`} alt="" />
+        <img className="rounded-lg w-full" src={post.thumbnail} alt="" />
         <p className="mt-4 text-justify" dangerouslySetInnerHTML={{ __html:post.description}}>        
         </p>
       </div>

@@ -31,7 +31,7 @@ const Authors = () => {
               return (
                 <Link to={`/posts/users/${author._id}`}>
                 <div key={author._id} className="flex bg-white rounded-xl p-4 w-full md:w-auto">                  
-                  <img className='rounded-full w-24 h-24 object-cover mr-3 shadow-md' src={`${REACT_APP_ASSETS_URL}/uploads/${author.avatar}`} alt="author avatar" />
+                  <img className='rounded-full w-24 h-24 object-cover mr-3 shadow-md' src={author.avatar} alt="author avatar" />
                   <div className="flex flex-col gap-3">
                     <h1>{author.name}</h1>
                     <p>{author.posts}</p>
