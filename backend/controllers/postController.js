@@ -167,20 +167,11 @@ const editPost = async (req, res, next) => {
         );
       } else {
         const publicId = oldPost.thumbnail.split("/").pop().split(".")[0];
-      const publicId1 = oldPost.thumbnail.split("/").pop().split(".")[1];
-      const result = await cloudinary.uploader.destroy(publicId);
-      if (!result) {
-        return next(new HttpError("error"));
-      }
+        const result = await cloudinary.uploader.destroy(publicId);
+        if (!result) {
+          return next(new HttpError("error"));
+        }
 
-        // fs.unlink(
-        //   path.join(__dirname, "..", "/uploads", publicId+'.'+publicId1),
-        //   async (err) => {
-        //     if (err) {
-        //       return next(new HttpError(err));
-        //     }
-        //   }
-        // );
         const { thumbnail } = req.files;
         if (thumbnail.size > 2000000) {
           return next(
@@ -190,18 +181,8 @@ const editPost = async (req, res, next) => {
         }
         fileName = thumbnail.name;
         let splittedFn = fileName.split(".");
-        newFileName = splittedFn[0] + uuid();
-        let newFileName1 =
-        newFileName+'.'+splittedFn[splittedFn.length - 1];
+        newFileName = splittedFn[0] + uuid();        
         
-        // thumbnail.mv(
-        //   path.join(__dirname, "..", "uploads", newFileName1),
-        //   async (err) => {
-        //     if (err) {
-        //       return next(new HttpError(err));
-        //     }              
-        //   }
-        // );
         const uploadResult = await cloudinary.uploader.upload_stream(   
           {public_id:newFileName} ,
           async (error, result) => {
@@ -225,13 +206,11 @@ const editPost = async (req, res, next) => {
             }
           }
         );
-    
-        // Create a stream to upload the file buffer
         const stream = uploadResult;
         stream.end(thumbnail.data);
       }
-    }    
-    res.status(200).json(updatedPost);
+      res.status(200).json(updatedPost);
+    }        
   } catch (error) {
     return next(new HttpError(error));
   }
@@ -247,11 +226,16 @@ const deletePost = async (req, res, next) => {
     const fileName = post.thumbnail;
     if (req.user.id == post.creator) {
       const publicId = fileName.split("/").pop().split(".")[0];
-      const publicId1 = fileName.split("/").pop().split(".")[1];
       const result = await cloudinary.uploader.destroy(publicId);
       if (!result) {
         return next(new HttpError("error"));
       }
+
+      await Post.findByIdAndDelete(postID);
+      const cUser = await User.findById(req.user.id);
+      const userPostCount = cUser.posts - 1;
+      await User.findByIdAndUpdate(req.user.id, { posts: userPostCount });
+      res.status(200).json("Post deleted successfully.");
 
       // fs.unlink(
       //   path.join(__dirname, "..", "uploads", publicId+'.'+publicId1),
