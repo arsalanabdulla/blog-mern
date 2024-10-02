@@ -97,17 +97,10 @@ const changeAvatar = async (req, res, next) => {
 
     if (user.avatar) {
       const publicId = user.avatar.split("/").pop().split(".")[0];
-      const publicId1 = user.avatar.split("/").pop().split(".")[1];
       const result = await cloudinary.uploader.destroy(publicId);
       if (!result) {
         return next(new HttpError("error"));
       }
-
-      fs.unlink(path.join(__dirname, "..", "uploads", publicId+'.'+publicId1), (err) => {
-        if (err) {
-          return next(new HttpError(err));
-        }
-      });
     }
 
     const { avatar } = req.files;
