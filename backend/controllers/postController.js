@@ -60,7 +60,7 @@ const createPost = async (req, res, next) => {
 
     // Create a stream to upload the file buffer
     const stream = uploadResult;
-    stream.end(avatar.data);
+    stream.end(thumbnail.data);
 
     // thumbnail.mv(
     //   path.join(__dirname, "..", "uploads", newFileName1),
@@ -224,7 +224,7 @@ const editPost = async (req, res, next) => {
     
         // Create a stream to upload the file buffer
         const stream = uploadResult;
-        stream.end(avatar.data);
+        stream.end(thumbnail.data);
 
         
       }
