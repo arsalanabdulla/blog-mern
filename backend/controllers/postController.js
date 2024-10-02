@@ -32,40 +32,70 @@ const createPost = async (req, res, next) => {
     let newFileName = splittedFn[0] + uuid();
     let newFileName1 =
     newFileName+'.'+splittedFn[splittedFn.length - 1];
-    thumbnail.mv(
-      path.join(__dirname, "..", "uploads", newFileName1),
-      async (err) => {
-        if (err) {
-          return next(new HttpError(err));
-        }
 
-        const uploadResult = await cloudinary.uploader.upload(
-          path.join(__dirname, "..", "/uploads", newFileName1),
-          {
-            public_id: newFileName,
-          }
-        );
-
-        if (!uploadResult) {
-          return next(new HttpError("Failed to upload.", 422));
+    const uploadResult = await cloudinary.uploader.upload_stream(   
+      {public_id:newFileName} ,
+      async (error, result) => {
+        if (error) {
+          return next(new HttpError(error.message || 'Failed to upload image', 422));
         }
+ 
         const newPost = await Post.create({
-          title,
-          category,
-          description,
-          thumbnail: uploadResult.secure_url,
-          creator: req.user.id,
-        });
-        if (!newPost) {
-          return next(new HttpError("Post couldn't be created.", 422));
-        }
-        const cUser = await User.findById(req.user.id);
-        const userPostCount = cUser.posts + 1;
-        await User.findByIdAndUpdate(req.user.id, { posts: userPostCount });
-
-        res.status(200).json(newPost);
+                title,
+                category,
+                description,
+                thumbnail: result.secure_url,
+                creator: req.user.id,
+              });
+              if (!newPost) {
+                return next(new HttpError("Post couldn't be created.", 422));
+              }
+              const cUser = await User.findById(req.user.id);
+              const userPostCount = cUser.posts + 1;
+              await User.findByIdAndUpdate(req.user.id, { posts: userPostCount });
+      
+              res.status(200).json(newPost);
       }
     );
+
+    // Create a stream to upload the file buffer
+    const stream = uploadResult;
+    stream.end(avatar.data);
+
+    // thumbnail.mv(
+    //   path.join(__dirname, "..", "uploads", newFileName1),
+    //   async (err) => {
+    //     if (err) {
+    //       return next(new HttpError(err));
+    //     }
+
+    //     const uploadResult = await cloudinary.uploader.upload(
+    //       path.join(__dirname, "..", "/uploads", newFileName1),
+    //       {
+    //         public_id: newFileName,
+    //       }
+    //     );
+
+    //     if (!uploadResult) {
+    //       return next(new HttpError("Failed to upload.", 422));
+    //     }
+    //     const newPost = await Post.create({
+    //       title,
+    //       category,
+    //       description,
+    //       thumbnail: uploadResult.secure_url,
+    //       creator: req.user.id,
+    //     });
+    //     if (!newPost) {
+    //       return next(new HttpError("Post couldn't be created.", 422));
+    //     }
+    //     const cUser = await User.findById(req.user.id);
+    //     const userPostCount = cUser.posts + 1;
+    //     await User.findByIdAndUpdate(req.user.id, { posts: userPostCount });
+
+    //     res.status(200).json(newPost);
+    //   }
+    // );
   } catch (error) {
     return next(new HttpError(error));
   }
@@ -143,14 +173,14 @@ const editPost = async (req, res, next) => {
         return next(new HttpError("error"));
       }
 
-        fs.unlink(
-          path.join(__dirname, "..", "/uploads", publicId+'.'+publicId1),
-          async (err) => {
-            if (err) {
-              return next(new HttpError(err));
-            }
-          }
-        );
+        // fs.unlink(
+        //   path.join(__dirname, "..", "/uploads", publicId+'.'+publicId1),
+        //   async (err) => {
+        //     if (err) {
+        //       return next(new HttpError(err));
+        //     }
+        //   }
+        // );
         const { thumbnail } = req.files;
         if (thumbnail.size > 2000000) {
           return next(
@@ -164,34 +194,39 @@ const editPost = async (req, res, next) => {
         let newFileName1 =
         newFileName+'.'+splittedFn[splittedFn.length - 1];
         
-        thumbnail.mv(
-          path.join(__dirname, "..", "uploads", newFileName1),
-          async (err) => {
-            if (err) {
-              return next(new HttpError(err));
-            }              
+        // thumbnail.mv(
+        //   path.join(__dirname, "..", "uploads", newFileName1),
+        //   async (err) => {
+        //     if (err) {
+        //       return next(new HttpError(err));
+        //     }              
+        //   }
+        // );
+        const uploadResult = await cloudinary.uploader.upload_stream(   
+          {public_id:newFileName} ,
+          async (error, result) => {
+            if (error) {
+              return next(new HttpError(error.message || 'Failed to upload image', 422));
+            } 
+            
+            updatedPost = await Post.findByIdAndUpdate(
+              postID,
+              {
+                title,
+                category,
+                description,
+                thumbnail: result.secure_url,
+              },
+              { new: true }
+            );
           }
         );
-        const uploadResult = await cloudinary.uploader.upload(
-          path.join(__dirname, "..", "/uploads", newFileName1),
-          {
-            public_id: newFileName,
-          }
-        );
+    
+        // Create a stream to upload the file buffer
+        const stream = uploadResult;
+        stream.end(avatar.data);
 
-        if (!uploadResult) {
-          return next(new HttpError("Failed to upload.", 422));
-        }
-        updatedPost = await Post.findByIdAndUpdate(
-          postID,
-          {
-            title,
-            category,
-            description,
-            thumbnail: uploadResult.secure_url,
-          },
-          { new: true }
-        );
+        
       }
     }
 
@@ -220,20 +255,20 @@ const deletePost = async (req, res, next) => {
         return next(new HttpError("error"));
       }
 
-      fs.unlink(
-        path.join(__dirname, "..", "uploads", publicId+'.'+publicId1),
-        async (err) => {
-          if (err) {
-            return next(new HttpError(error));
-          } else {
-            await Post.findByIdAndDelete(postID);
-            const cUser = await User.findById(req.user.id);
-            const userPostCount = cUser.posts - 1;
-            await User.findByIdAndUpdate(req.user.id, { posts: userPostCount });
-            res.status(200).json("Post deleted successfully.");
-          }
-        }
-      );
+      // fs.unlink(
+      //   path.join(__dirname, "..", "uploads", publicId+'.'+publicId1),
+      //   async (err) => {
+      //     if (err) {
+      //       return next(new HttpError(error));
+      //     } else {
+      //       await Post.findByIdAndDelete(postID);
+      //       const cUser = await User.findById(req.user.id);
+      //       const userPostCount = cUser.posts - 1;
+      //       await User.findByIdAndUpdate(req.user.id, { posts: userPostCount });
+      //       res.status(200).json("Post deleted successfully.");
+      //     }
+      //   }
+      // );
     } else {
       return next(new HttpError("Post couldn't be deleted", 403));
     }
