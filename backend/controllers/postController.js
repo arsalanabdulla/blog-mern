@@ -219,20 +219,18 @@ const editPost = async (req, res, next) => {
               },
               { new: true }
             );
+
+            if (!updatedPost) {
+              return next(new HttpError("Couldn't update post.",400));
+            }
           }
         );
     
         // Create a stream to upload the file buffer
         const stream = uploadResult;
         stream.end(thumbnail.data);
-
-        
       }
-    }
-
-    if (!updatedPost) {
-      return next(new HttpError("Couldn't update post.", 400));
-    }
+    }    
     res.status(200).json(updatedPost);
   } catch (error) {
     return next(new HttpError(error));
