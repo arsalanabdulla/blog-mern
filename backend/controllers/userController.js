@@ -101,6 +101,12 @@ const changeAvatar = async (req, res, next) => {
       if (!result) {
         return next(new HttpError("error"));
       }
+
+      // fs.unlink(path.join(__dirname, "..", "uploads", publicId+'.'+publicId1), (err) => {
+      //   if (err) {
+      //     return next(new HttpError(err));
+      //   }
+      // });
     }
 
     const { avatar } = req.files;
@@ -117,27 +123,16 @@ const changeAvatar = async (req, res, next) => {
     let newFileName1 =
     newFileName+'.'+splittedFn[splittedFn.length - 1];
 
-    await avatar.mv(
-      path.join(__dirname, "..", "/uploads", newFileName1),
-      async (err) => {
-        if (err) {
-          return next(new HttpError(err));
+    const uploadResult = await cloudinary.uploader.upload_stream(   
+      {public_id:newFileName} ,
+      async (error, result) => {
+        if (error) {
+          return next(new HttpError(error.message || 'Failed to upload image', 422));
         }
-
-        const uploadResult = await cloudinary.uploader.upload(
-          path.join(__dirname, "..", "/uploads", newFileName1),
-          {
-            public_id: newFileName,
-          }
-        );
-
-        if (!uploadResult) {
-          return next(new HttpError("Failed to upload.", 422));
-        }
-
+ 
         const updatedAvatar = await User.findByIdAndUpdate(
           req.user.id,
-          { avatar: uploadResult.secure_url },
+          { avatar: result.secure_url }, // Save the Cloudinary URL
           { new: true }
         );
 
@@ -148,6 +143,42 @@ const changeAvatar = async (req, res, next) => {
         res.status(200).json(updatedAvatar);
       }
     );
+
+    // Create a stream to upload the file buffer
+    const stream = uploadResult;
+    stream.end(avatar.data);
+
+    // await avatar.mv(
+    //   path.join(__dirname, "..", "/uploads", newFileName1),
+    //   async (err) => {
+    //     if (err) {
+    //       return next(new HttpError(err));
+    //     }
+
+    //     const uploadResult = await cloudinary.uploader.upload(
+    //       path.join(__dirname, "..", "/uploads", newFileName1),
+    //       {
+    //         public_id: newFileName,
+    //       }
+    //     );
+
+    //     if (!uploadResult) {
+    //       return next(new HttpError("Failed to upload.", 422));
+    //     }
+
+    //     const updatedAvatar = await User.findByIdAndUpdate(
+    //       req.user.id,
+    //       { avatar: uploadResult.secure_url },
+    //       { new: true }
+    //     );
+
+    //     if (!updatedAvatar) {
+    //       return next(new HttpError("Avatar couldn't be changed.", 422));
+    //     }
+
+    //     res.status(200).json(updatedAvatar);
+    //   }
+    // );
   } catch (error) {
     return next(new HttpError(error, 422));
   }
